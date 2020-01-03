@@ -1,4 +1,4 @@
-package OperateSystemModule;
+package pingcap;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -6,26 +6,24 @@ import java.util.HashSet;
 import java.util.Scanner;
 
 /**
- * Created by mac on 2019/12/30 22：35.
+ * Created by Chen Lidong on 2020/01/03 20：55.
  *
  */
 
 
+public class JugdeDeadLockInputEmbedded {
 
-
-
-public class JugdeDeadLockSingleResource {
-
-    class Node { // Node of a user or a resource
-        int key; // 百度百科关于阿拉伯字母的词条定义阿拉伯字母共28个，用户用 0 - 27表示；第i个资源用 i + 27 表示
-        ArrayList<Integer> in; // 所有入边的源顶点, 重要的其实是数量，而不是具体是哪个源顶点？
-        ArrayList<Node> out; // 所有出边的目标点   是否可以优化为 Integer?
-        public Node(int key) { // ??
+   static class Node { // Node of a user or a resource
+        int key; // 百度百科关于阿拉伯字母的词条定义阿拉伯字母共28个，用户用 0 - 27表示；第i个资源用 i + 28 表示
+        ArrayList<Integer> in; // 所有入边的源顶点
+        ArrayList<Node> out; // 所有出边的目标点
+        public Node(int key) {
             this.key = key;
             this.in = new ArrayList<Integer>();
             this.out = new ArrayList<Node>();
         }
-    }
+        // 注：此题主要为了体现结题此路，故此处没有严格按照面向对象的规范使用 getter 和 setter
+   }
 
     /**
      * 死锁检测
@@ -33,28 +31,42 @@ public class JugdeDeadLockSingleResource {
      * 1、Single Resource
      * 2、只占用和申请资源，不释放资源
      * 3、同一个线程不会第二次申请同一个资源
-     * @return
      */
-    public boolean jugdeDeadLockSingleResource(){
-
-
+    public boolean jugdeDeadLockSingleResource()
+    {
         Scanner sc = new Scanner(System.in);
 
-        HashSet<Integer> allKeys = new HashSet<Integer>(); // 记录 Node 中所有的 key
-        HashMap<Integer,Node> allNodes = new HashMap<Integer,Node>(); // 记录 key 和所有对应的 Node
+        // 记录 Node 中所有的 key
+        HashSet<Integer> allKeys = new HashSet<Integer>();
+        // 记录 key 和所有对应的 Node
+        HashMap<Integer, Node> allNodes = new HashMap<Integer, Node>();
 
         /**
          * Stage 1. Read inputs and construct the directed graph.
 
          */
-        System.out.println("Please int the request sequence:");
-        while(sc.hasNextLine()) {
-            String s = sc.nextLine();
-            if (s.equals(""))
-                break;
+//        String[] in = {"a -> 1", "c -> 2", "c -> 1", "a -> 2"};
+        String[] in3 ={"a -> 1","b -> 3",
+                "c -> 2",
+                "d -> 5",
+                "b -> 2",
+                "c -> 5",
+                "c -> 1",
+                "a -> 5"};
+        String[] in ={"b -> 3",
+                "c -> 2",
+                "d -> 5",
+                "b -> 2",
+                "c -> 5",
+                "c -> 1",
+                "a -> 5",
+                "a -> 2"};
+        for (String s : in3){
             String[] two = s.split(" -> ");
             int userKey = two[0].charAt(0) - 'a';
             int resKey = Integer.valueOf(two[1]) + 28;
+
+            // 本代码不处理魔鬼数字问题
             /**
              *  注意区分请求和占用的边的方向不一样
              *  请求： user -> resource
@@ -68,9 +80,8 @@ public class JugdeDeadLockSingleResource {
              * 3、如果 User 已存在，resource 的入边数量为 0，边表示占用
              * 4、其他，表示请求
              */
-
-            if (!allKeys.contains(userKey)) { // 1、如果 User 不存在，user -> resource 表示占有
-
+            // 1、如果 User 不存在，user -> resource 表示占有
+            if (!allKeys.contains(userKey)) {
                 Node userNode = new Node(userKey);
                 // 占有关系 ： resource -> user
                 if (allKeys.contains(resKey)) {
@@ -86,12 +97,13 @@ public class JugdeDeadLockSingleResource {
                     resNode.out.add(userNode);
                     // update in
                     userNode.in.add(resKey);
-                    allNodes.put(resKey,resNode);
+                    allNodes.put(resKey, resNode);
                 }
-                allNodes.put(userKey,userNode);
+                allKeys.add(userKey);
+                allNodes.put(userKey, userNode);
 
-            } else if (!allKeys.contains(resKey)) { // 2、如果 User 已存在，resource 不存在，边表示占有
-
+            } else if (!allKeys.contains(resKey)) {
+                // 2、如果 User 已存在，resource 不存在，边表示占有
                 // 占有关系 ： resource -> user
                 Node resNode = new Node(resKey);
 
@@ -101,18 +113,20 @@ public class JugdeDeadLockSingleResource {
                 // update in
                 userNode.in.add(resKey);
 
-                allNodes.put(resKey,resNode);
+                allNodes.put(resKey, resNode);
+                allKeys.add(resKey);
 
             } else {
 
                 Node resNode = allNodes.get(resKey);
                 Node userNode = allNodes.get(userKey);
-                if (resNode.in.size() == 0) { // 3、如果 User 已存在，resource 的入边数量为 0，边表示占用
+                if (resNode.out.isEmpty()) {
+                    // 3、如果 User 已存在，resource 的出边数量为 0（resource 还未被占用），边表示占用
                     // update out
                     resNode.out.add(userNode);
                     // update in
                     userNode.in.add(resKey);
-                } else { // 4、 其他，表示请求
+                } else { // 4、 其他，表示请求关系
                     resNode.in.add(userKey);
                     userNode.out.add(resNode);
                 }
@@ -120,14 +134,20 @@ public class JugdeDeadLockSingleResource {
 
 
         }
+        sc.close();
+
+
+
 
         // 遍历所有节点,找到所有入度为 0 的点
         HashSet<Node> zeroInNodesSet = new HashSet<Node>();
         for (Node node : allNodes.values()) {
-            if (node.in.size() == 0)
+            if (node.in.isEmpty()) {
                 zeroInNodesSet.add(node);
+                System.out.println("There is a in-empty node ：" + node.key);
+            }
         }
-        if (zeroInNodesSet.size() == 0) // 所有的点都有入边
+        if (zeroInNodesSet.isEmpty()) // 所有的点都有入边
         {
             System.out.println("DeadLock exists.");
             return true;
@@ -139,26 +159,30 @@ public class JugdeDeadLockSingleResource {
          */
         HashSet<Integer> isVisited = new HashSet<Integer>(); // 记录已经被访问过一次的节点
 
-
-
-        while ( (isVisited.size() < allKeys.size()) && !zeroInNodesSet.isEmpty() ) {
+        while ((isVisited.size() < allKeys.size()) && !zeroInNodesSet.isEmpty() ) {
             Node cur = zeroInNodesSet.iterator().next();
-
+            System.out.println("Cur node is:" + cur.key + ", in size is " + cur.in.size() + ", out size is " + cur.out.size());
             ArrayList<Node> dests = cur.out;
-            for (Node dest : dests ) {
-                dest.in.remove(cur);
-                // out不用更新，只需要更新 in
-                if( dest.in.size() == 0) {
+            allKeys.remove(new Integer(cur.key));
+            for (Node dest : dests) {
+                System.out.println("   We will remove " + cur.key + " from cur's ins.");
+                System.out.println("   Before removing, dest.in.size = " + dest.in.size());
+                dest.in.remove(new Integer(cur.key));
+                System.out.println("   After removing, dest.in.size = " + dest.in.size());
+
+                // out不用更新，只需要更新 in ??
+                if (dest.in.isEmpty()) {
                     zeroInNodesSet.add(dest);
                 }
             }
+
+            zeroInNodesSet.remove(cur);
         }
 
-        if( zeroInNodesSet.isEmpty() ) {// 最终可以完成拓扑排序
+        if (allKeys.isEmpty()) { // 最终可以完成拓扑排序
             System.out.println("No DeadLock exists.");
             return false; // 不死锁
-        }
-        else {
+        } else {
             System.out.println("DeadLock exists.");
             return true;
         }
