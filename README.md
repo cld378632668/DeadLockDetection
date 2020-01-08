@@ -1,5 +1,20 @@
 # DeadLockDetection
 
+
+所有的资源和用户都抽象成object
+
+如果 object1 -> object2 左右两头都不存在则在他们中间建立一条边： o2 -> o1 ,
+如果 object1 -> object2 有一个不存在建立边： o2 -> o1 ,
+如果 object1 -> object2 左右两边都存在则建立边： o1 -> o2.
+规约： 只要有一边不存在建立边 o2 -> o1.
+
+
+
+
+
+
+
+
 #  Code Review(代码点评)
 
 ```
